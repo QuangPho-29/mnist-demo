@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MNIST CNN Demo | Henry</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="icon" href="logo.svg" type="image/svg+xml">
+</head>
+<body>
+<div class="navbar">
+    <div class="container">
+        <div class="menu-button" onclick="toggleSidebar()">
+            <div class="menu-icon">
+                <div class="menu-bar"></div>
+                <div class="menu-bar"></div>
+                <div class="menu-bar"></div>
+            </div>
+        </div>
+
+        <div class="menu">
+            <div id="menu-logo" class="logo">
+                <h1>Henry<span>.</span> </h1>
+            </div>
+            <ul>
+                <li id="menu-home" onclick="toggleSidebar()">
+                    <div class="dot"></div>
+                    <a href="#home">Home</a>
+                    <!--                    <div class="bar"></div>-->
+                </li>
+                <li onclick="toggleSidebar()">
+                    <div class="dot"></div>
+                    <a href="#about-me">About me</a>
+                    <!--                    <div class="bar"></div>-->
+                </li>
+                <li onclick="toggleSidebar()">
+                    <div class="dot"></div>
+                    <a href="#experience">Experience</a>
+                    <!--                    <div class="bar"></div>-->
+                </li>
+                <!--                <li onclick="toggleSidebar()">-->
+                <!--                    <div class="dot"></div>-->
+                <!--                    <a href="#education">Education</a>-->
+                <!--&lt;!&ndash;                    <div class="bar"></div>&ndash;&gt;-->
+                <!--                </li>-->
+                <li onclick="toggleSidebar()">
+                    <div class="dot"></div>
+                    <a href="#technologies">Skills</a>
+                    <!--                    <div class="bar"></div>-->
+                </li>
+                <!--                <li onclick="toggleSidebar()">-->
+                <!--                    <div class="dot"></div>-->
+                <!--                    <a href="#certificates">Certificates</a>-->
+                <!--&lt;!&ndash;                    <div class="bar"></div>&ndash;&gt;-->
+                <!--                </li>-->
+            </ul>
+            <div class="copyright">
+                <p><i>Designed and Built by <strong>Ta Quang Pho</strong> :D</i></p>
+            </div>
+        </div>
+        <div class="logo">
+            <a href="index.html"><img class="logo-img" src="profile.JPG" alt="logo"></a>
+        </div>
+    </div>
+</div>
+<div class="content">
+    <div class="container">
+        <h1>Nhận diện số viết tay</h1>
+        <h3>Viết một số (từ 0-9)</h3>
+        <canvas id="canvas" ></canvas>
+        <div class="button_group">
+            <button id="predict" class="primary_button">Dự đoán</button>
+            <button id="clear" class="sup_button">Xóa</button>
+        </div>
+        <div class="result">
+            <h2>Kết quả dự đoán: <span id="result" class="bold"></span></h2>
+            <div class="bar">
+                <div class="bar_container">
+                    <div id="bar0" class="bar_fill">
+                    </div>
+                </div>
+                <div class="bar_container">
+                    <div id="bar1" class="bar_fill">
+                    </div>
+                </div>
+                <div class="bar_container">
+                    <div id="bar2" class="bar_fill">
+                    </div>
+                </div>
+                <div class="bar_container">
+                    <div id="bar3" class="bar_fill">
+                    </div>
+                </div>
+                <div class="bar_container">
+                    <div id="bar4" class="bar_fill">
+                    </div>
+                </div>
+                <div class="bar_container">
+                    <div id="bar5" class="bar_fill">
+                    </div>
+                </div>
+                <div class="bar_container">
+                    <div id="bar6" class="bar_fill">
+                    </div>
+                </div>
+                <div class="bar_container">
+                    <div id="bar7" class="bar_fill">
+                    </div>
+                </div>
+                <div class="bar_container">
+                    <div id="bar8" class="bar_fill">
+                    </div>
+                </div>
+                <div class="bar_container">
+                    <div id="bar9" class="bar_fill">
+                    </div>
+                </div>
+            </div>
+            <div class="number">
+                <div id="number0" class="number_text">0</div>
+                <div id="number1" class="number_text">1</div>
+                <div id="number2" class="number_text">2</div>
+                <div id="number3" class="number_text">3</div>
+                <div id="number4" class="number_text">4</div>
+                <div id="number5" class="number_text">5</div>
+                <div id="number6" class="number_text">6</div>
+                <div id="number7" class="number_text">7</div>
+                <div id="number8" class="number_text">8</div>
+                <div id="number9" class="number_text">9</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/onnxruntime-web/dist/ort.min.js"></script>
+<script src="script.js"></script>
+</body>
+</html>
