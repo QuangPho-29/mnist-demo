@@ -28,7 +28,7 @@ a {
 
 .container {
     display: flex;
-    max-width: 31.25rem;
+    max-width: 40rem;
     justify-content: space-between;
     align-items: flex-start;
     align-self: stretch;
