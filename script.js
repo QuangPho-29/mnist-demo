@@ -1,20 +1,27 @@
-// Tạo canvas 28x28 nhưng hiển thị với mỗi pixel phóng to
+// Tạo canvas 280x280 nhưng chia thành lưới 28x28
 const canvas = document.getElementById('canvas');
 const ctx = canvas.getContext('2d');
-const scaleFactor = 10;
-canvas.width = 28 * scaleFactor;
-canvas.height = 28 * scaleFactor;
+// const processedCanvas = document.getElementById('preprocessed_canvas');
+// const processedCtx = processedCanvas.getContext('2d');
+
+// Kích thước
+const gridSize = 28;
+const cellSize = 10; // Kích thước mỗi ô lưới (10x10 pixels)
+canvas.width = gridSize * cellSize;
+canvas.height = gridSize * cellSize;
+// processedCanvas.width = gridSize;
+// processedCanvas.height = gridSize;
 
 // Nút và kết quả
 const predictButton = document.getElementById('predict');
 const clearButton = document.getElementById('clear');
 const result = document.getElementById('result');
 
-// Đặt nền đen ban đầu cho canvas
+// Đặt nền đen cho canvas
 ctx.fillStyle = 'black';
 ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-// Biến trạng thái vẽ
+// Trạng thái vẽ
 let isDrawing = false;
 
 // Sự kiện vẽ
@@ -24,70 +31,146 @@ canvas.addEventListener('mousemove', draw);
 
 function draw(event) {
     if (!isDrawing) return;
-    const rect = canvas.getBoundingClientRect();
-    const x = Math.floor((event.clientX - rect.left) / scaleFactor) * scaleFactor;
-    const y = Math.floor((event.clientY - rect.top) / scaleFactor) * scaleFactor;
 
-    ctx.fillStyle = 'white';
-    ctx.fillRect(x, y, scaleFactor, scaleFactor); // Vẽ từng pixel phóng to
+    const rect = canvas.getBoundingClientRect();
+    const x = Math.floor((event.clientX - rect.left) / cellSize);
+    const y = Math.floor((event.clientY - rect.top) / cellSize);
+
+    // Áp dụng brush 3x3
+    const brushOffsets = [
+        { dx: -1, dy: -1, opacity: 0.5 }, // Ô 1
+        { dx: 0, dy: -1, opacity: 0.8 },  // Ô 2
+        { dx: 1, dy: -1, opacity: 0.5 },  // Ô 3
+        { dx: -1, dy: 0, opacity: 0.8 },  // Ô 4
+        { dx: 0, dy: 0, opacity: 1.0 },   // Ô 5 (giữa)
+        { dx: 1, dy: 0, opacity: 0.8 },   // Ô 6
+        { dx: -1, dy: 1, opacity: 0.5 },  // Ô 7
+        { dx: 0, dy: 1, opacity: 0.8 },   // Ô 8
+        { dx: 1, dy: 1, opacity: 0.5 },   // Ô 9
+    ];
+
+    ctx.globalCompositeOperation = 'source-over';
+    brushOffsets.forEach(({ dx, dy, opacity }) => {
+        const nx = x + dx;
+        const ny = y + dy;
+
+        // Chỉ vẽ nếu ô nằm trong lưới
+        if (nx >= 0 && nx < gridSize && ny >= 0 && ny < gridSize) {
+            ctx.fillStyle = `rgba(255, 255, 255, ${opacity})`;
+            ctx.fillRect(nx * cellSize, ny * cellSize, cellSize, cellSize);
+        }
+    });
 }
 
-// Clear canvas
+// Xóa canvas
 clearButton.addEventListener('click', () => {
     ctx.fillStyle = 'black';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
+    // processedCtx.clearRect(0, 0, processedCanvas.width, processedCanvas.height);
     resetBars();
+    result.textContent = '';
+
 });
 
 // Reset các thanh bar
 function resetBars() {
     for (let i = 0; i < 10; i++) {
         const bar = document.getElementById(`bar${i}`);
-        bar.style.height = '0%';
-        bar.classList.remove('active');
-
         const number = document.getElementById(`number${i}`);
+
+        // Đặt chiều cao của thanh về 0%
+        bar.style.height = '0%';
+
+        // Xóa thuộc tính data-content
+        bar.setAttribute('bar-content', '');
+
+        // Loại bỏ trạng thái active
+        bar.classList.remove('active');
         number.classList.remove('active');
     }
 }
 
+// Xử lý ảnh và hiển thị lên canvas 28x28
+function preprocessCanvas() {
+    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    const grayImage = new Uint8ClampedArray(gridSize * gridSize * 4);
 
-// Load mô hình ONNX
+    for (let y = 0; y < gridSize; y++) {
+        for (let x = 0; x < gridSize; x++) {
+            const idx = (y * gridSize + x) * 4;
+            const value = ctx.getImageData(x * cellSize, y * cellSize, cellSize, cellSize).data[0];
+            grayImage[idx] = value;
+            grayImage[idx + 1] = value;
+            grayImage[idx + 2] = value;
+            grayImage[idx + 3] = 255;
+        }
+    }
+
+    const imageData28x28 = new ImageData(grayImage, gridSize, gridSize);
+    // processedCtx.putImageData(imageData28x28, 0, 0);
+
+    return Array.from(grayImage).filter((_, i) => i % 4 === 0).map(v => v / 255.0);
+}
+
+// Load ONNX model
 let session;
 async function loadModel() {
     session = await ort.InferenceSession.create('./mnist_model.onnx');
     console.log('Mô hình đã được tải');
 }
 
-// Dự đoán
-async function predict() {
-    // Chuyển đổi ảnh từ canvas 280x280 về kích thước gốc 28x28
-    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-    const tensor = preprocessImage(imageData);
-
-    // Chạy dự đoán
-    const feeds = { input: tensor };
-    const output = await session.run(feeds);
-
-    // Lấy kết quả
-    const predictions = output.output.data;
-    const digit = predictions.indexOf(Math.max(...predictions));
-
-    result.textContent = digit;
-
-    // Cập nhật các thanh bar và số dự đoán
-    updateBars(predictions, digit);
+function softmax(logits) {
+    // Tính e^x cho mỗi phần tử và chuẩn hóa
+    const expValues = logits.map(x => Math.exp(x)); // Lấy e^logit
+    const sumExp = expValues.reduce((a, b) => a + b, 0); // Tổng tất cả e^logit
+    return expValues.map(x => x / sumExp); // Chuẩn hóa thành xác suất
 }
 
-// Cập nhật thanh bar và màu số
-function updateBars(predictions, digit) {
-    predictions.forEach((probability, index) => {
+// Dự đoán số
+async function predict() {
+    const pixelData = preprocessCanvas();
+    const tensor = new ort.Tensor('float32', new Float32Array(pixelData), [1, 1, 28, 28]);
+
+    const feeds = { input: tensor };
+    const output = await session.run(feeds);
+    // console.log(output); // Kiểm tra toàn bộ cấu trúc đầu ra
+
+
+    // Kiểm tra và trích xuất logits
+    const logits = Object.values(output.output.cpuData);
+    if (!Array.isArray(logits)) {
+        console.error("Logits không hợp lệ:", logits);
+        return;
+    }
+
+    const probabilities = softmax(logits); // Chuyển logits thành xác suất
+
+    // console.log(probabilities); // Hiển thị xác suất
+
+    const digit = probabilities.indexOf(Math.max(...probabilities)); // Lớp có xác suất cao nhất
+    result.textContent = `${digit}`;
+
+    updateBars(probabilities, digit); // Cập nhật các thanh bars với xác suất
+}
+
+
+function updateBars(probabilities, digit) {
+    probabilities.forEach((value, index) => {
         const bar = document.getElementById(`bar${index}`);
         const number = document.getElementById(`number${index}`);
 
-        // Tính toán chiều rộng thanh bar dựa trên xác suất
-        const percentage = (probability * 100).toFixed(2);
-        bar.style.height = `${percentage}%`;
+        if (value > 0.01) {
+            // Cập nhật chiều cao của thanh
+            bar.style.height = `${value * 100}%`; // Hiển thị phần trăm xác suất
+            // console.log(bar);
+
+            // Cập nhật nội dung chỉ khi giá trị > 0
+            bar.setAttribute('bar-content', `${(value * 100).toFixed(2)}%`);
+        } else {
+            // Nếu giá trị ≤ 1, ẩn nội dung và đặt chiều cao về 0
+            bar.style.height = '0%';
+            bar.setAttribute('bar-content', '');
+        }
 
         // Cập nhật trạng thái active
         if (index === digit) {
@@ -101,35 +184,6 @@ function updateBars(predictions, digit) {
 }
 
 
-// Xử lý ảnh: giảm kích thước và chuẩn hóa
-function preprocessImage(imageData) {
-    const { data, width, height } = imageData;
-    const grayImage = new Float32Array(28 * 28);
-
-    for (let i = 0; i < 28; i++) {
-        for (let j = 0; j < 28; j++) {
-            let total = 0;
-            let count = 0;
-
-            // Lấy giá trị trung bình từ mỗi ô 10x10 pixel
-            for (let x = 0; x < scaleFactor; x++) {
-                for (let y = 0; y < scaleFactor; y++) {
-                    const idx = ((i * scaleFactor + x) * width + (j * scaleFactor + y)) * 4;
-                    total += data[idx]; // Lấy giá trị kênh đỏ (R) vì ảnh là grayscale
-                    count++;
-                }
-            }
-
-            grayImage[i * 28 + j] = (total / count) / 255.0; // Chuẩn hóa về [0, 1]
-        }
-    }
-
-    // Trả về tensor [1, 1, 28, 28]
-    return new ort.Tensor('float32', grayImage, [1, 1, 28, 28]);
-}
-
 // Tải mô hình khi trang load
 loadModel();
-
-// Thêm sự kiện cho nút "Dự đoán"
 predictButton.addEventListener('click', predict);
